@@ -78,6 +78,7 @@ static int g_port = DEFAULT_PORT;
 static uint64 g_sch = 0;          /* the server connection in use */
 static int g_tsConnected = 0;
 static int g_savedInput = -1;     /* the microphone state before the game took it over, -1 while not taken */
+static float g_savedWaveVolume = -1.0f; /* TeamSpeak's sound volume (volume_factor_wave) before the game muted it, -1 while not */
 
 /* ---- The game's state */
 static char g_mySteam[32] = "";
@@ -90,6 +91,7 @@ static void reportChannel(void);
 typedef struct { char steam[32]; } SteamId;
 static SteamId g_targets[MAX_PLAYERS];  static int g_numTargets = 0;
 static SteamId g_newTargets[MAX_PLAYERS]; static int g_numNewTargets = 0;
+static int g_targetsChannel = 0, g_newTargetsChannel = 0; /* the voice channel the target list was sent for */
 
 /* Steam ID to TeamSpeak client, rebuilt from the clients' metadata */
 typedef struct { anyID client; char steam[32]; int spatial; } ClientMap;
@@ -257,6 +259,37 @@ static void setMic(int on)
     ts3.flushClientSelfUpdates(g_sch, NULL);
 }
 
+/* TeamSpeak's own sounds while the game is linked: the game's voice keys whisper, and TeamSpeak plays its whisper sound
+   ("pssst") every time a whisper starts. Plugins can't turn off one sound, so all of TeamSpeak's sound files (its
+   notification sounds) are muted while the game is linked, and the volume goes back as it was afterwards. Voice isn't
+   affected. */
+static void muteSounds(int mute)
+{
+    char buf[32];
+    float cur = 1.0f;
+
+    if (mute)
+    {
+        if (g_savedWaveVolume >= 0.0f)
+            return;
+        if (ts3.getPlaybackConfigValueAsFloat(g_sch, "volume_factor_wave", &cur) != ERROR_ok)
+            cur = 1.0f;
+        g_savedWaveVolume = cur;
+        ts3.setPlaybackConfigValue(g_sch, "volume_factor_wave", "0");
+    }
+    else
+    {
+        if (g_savedWaveVolume < 0.0f)
+            return;
+        if (g_tsConnected)
+        {
+            sprintf_s(buf, sizeof(buf), "%.3f", g_savedWaveVolume);
+            ts3.setPlaybackConfigValue(g_sch, "volume_factor_wave", buf);
+        }
+        g_savedWaveVolume = -1.0f;
+    }
+}
+
 /* The game is linked and TeamSpeak connected: the microphone is the game's now */
 static void takeOver(void)
 {
@@ -269,6 +302,7 @@ static void takeOver(void)
         g_savedInput = INPUT_ACTIVE;
     publishIdentity(1);
     setMic(0);
+    muteSounds(1);
     g_lastChannel = 0;
     reportChannel();
     logmsg("Game linked: microphone taken over (was %s)", g_savedInput == INPUT_ACTIVE ? "on" : "off");
@@ -297,6 +331,7 @@ static void giveBack(void)
         ts3.setClientSelfVariableAsInt(g_sch, CLIENT_INPUT_DEACTIVATED, g_savedInput);
         publishIdentity(0);
     }
+    muteSounds(0);
     g_savedInput = -1;
     g_talking = 0;
     logmsg("Game unlinked: microphone given back");
@@ -347,15 +382,29 @@ static void applyTalk(void)
         return;
     }
 
+    ensureMap();
     if (g_talkChannel == CH_SQUAD)
     {
-        /* Squad: plain talk to our own channel */
-        ts3.requestClientSetWhisperList(g_sch, 0, NULL, NULL, NULL);
+        /* Squad: plain talk to our own channel. With the server's "enemies overhear" setting the game also sends the
+           enemies close enough to overhear: then it is a whisper to our channel and to them. */
+        uint64 chans[2] = { 0, 0 };
+        anyID me = 0;
+        if (g_targetsChannel == CH_SQUAD)
+            for (i = 0; i < g_numTargets && n < MAX_PLAYERS; i++)
+            {
+                c = findClient(g_targets[i].steam);
+                if (c)
+                    ids[n++] = c->client;
+            }
+        ids[n] = 0;
+        if (n > 0 && ts3.getClientID(g_sch, &me) == ERROR_ok && ts3.getChannelOfClient(g_sch, me, &chans[0]) == ERROR_ok)
+            ts3.requestClientSetWhisperList(g_sch, 0, chans, ids, NULL);
+        else
+            ts3.requestClientSetWhisperList(g_sch, 0, NULL, NULL, NULL);
         setMic(1);
         return;
     }
 
-    ensureMap();
     for (i = 0; i < g_numTargets && n < MAX_PLAYERS; i++)
     {
         c = findClient(g_targets[i].steam);
@@ -445,6 +494,7 @@ static void handleLine(char* line)
     else if (strcmp(tok[0], "TGT_BEGIN") == 0)
     {
         g_numNewTargets = 0;
+        g_newTargetsChannel = (n >= 2) ? atoi(tok[1]) : 0;
     }
     else if (strcmp(tok[0], "TGT") == 0)
     {
@@ -457,6 +507,7 @@ static void handleLine(char* line)
     {
         memcpy(g_targets, g_newTargets, sizeof(SteamId) * g_numNewTargets);
         g_numTargets = g_numNewTargets;
+        g_targetsChannel = g_newTargetsChannel;
         if (g_talking)
             applyTalk();
     }

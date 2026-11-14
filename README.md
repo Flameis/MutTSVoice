@@ -4,7 +4,8 @@
 
 MutTSVoice moves the game's voice chat onto **TeamSpeak 3**. Players keep their normal voice keys. While their TeamSpeak plugin is running (and they haven't turned it off with `mutate tsvoice off`), those keys talk through TeamSpeak instead of the game's own voice chat:
 
-- **The main Voice Chat key and Squad voice** are your **TeamSpeak channel**, like TeamSpeak's own push-to-talk: everyone sitting in the same TeamSpeak channel as you hears you.
+- **Squad voice** is your **TeamSpeak channel**, like TeamSpeak's own push-to-talk: everyone sitting in the same TeamSpeak channel as you hears you.
+- **The main Voice Chat key** talks on the channel picked with the game's **Change Voice Channel** key (O by default), as in the game: Team to begin with, then Squad (your TeamSpeak channel), Vehicle, Proximity, Command and All as you press it.
 - **All, Team, Vehicle and Command** voice reach exactly the players the game would pick, wherever they sit on the TeamSpeak server.
 - **Proximity** voice comes from the speaker's direction and fades out with distance.
 
@@ -31,7 +32,7 @@ There are two parts:
 3. **Join the TeamSpeak server** the game server names (type `mutate tsvoice` in the game to see it). Sit in your squad's channel: that channel is your Squad voice.
 4. **Play.** When the game finds the plugin you see *"[TS Voice] Linked to TeamSpeak"*. From then on your voice keys talk on TeamSpeak.
 
-While the game is linked, the plugin keeps your microphone off until you hold a voice key. When you leave the game, your microphone goes back to how it was.
+While the game is linked, the plugin keeps your microphone off until you hold a voice key, and mutes TeamSpeak's own sounds (its notification sounds, including the "pssst" whisper sound that would play every time someone talks to you on a game channel). When you leave the game, your microphone and TeamSpeak's sound volume go back to how they were.
 
 ## 2. The voice channels
 
@@ -45,12 +46,12 @@ These are the game's normal voice keys. Nothing new to learn.
 | Vehicle voice | The crew of your vehicle or helicopter |
 | Command voice | Squad leaders and the commander of your team (you must be one) |
 | Proximity voice | Anyone within 75 meters, **including enemies**. Their voice comes from your direction and gets quieter with distance |
-| The main Voice Chat key (CapsLock by default) | Always your TeamSpeak channel, like TeamSpeak's own push-to-talk, whatever the game's "change voice channel" key is set to |
+| The main Voice Chat key (CapsLock by default) | The channel picked with the game's Change Voice Channel key (O by default), shown by the game when you press it. The game starts on Team; Squad is your TeamSpeak channel. Pressing O while holding the key moves you to the new channel straight away |
 
 - If you can't talk on a channel right now, the key talks to your team instead, the same as the game does (Vehicle with no vehicle, Command when you aren't a leader).
 - **The dead** are heard only by other dead players, the same as the game, unless the server changes that. Squad voice is not affected: it is plain talk in your TeamSpeak channel.
 - **Spectators** reach only other spectators, except in Squad voice.
-- Who is talking on TeamSpeak that you can hear (and you, while you talk) shows on the left of the screen in the game's own voice pop-up, exactly like the game's voice chat: the name in the game's HUD font with the channel (TEAM, SQUAD, LOCAL, ...) under it, in team colours. It uses the pop-up's free rows, after anyone on the game's own voice chat, up to its 4 rows.
+- Who is talking on TeamSpeak that you can hear (and you, while you talk) shows on the left of the screen in the game's own voice pop-up, exactly like the game's voice chat: the name in the game's HUD font with the channel (TEAM, SQUAD, LOCAL, ...) under it, in team colours. It uses the pop-up's free rows, after anyone on the game's own voice chat, up to its 4 rows. An enemy talking on local (proximity) voice is heard but not shown.
 - Only players who have the plugin running can hear TeamSpeak voice. Everyone else uses the game's voice chat.
 
 ## 3. Commands
@@ -72,6 +73,7 @@ On the WebAdmin **Mutators** page, **MutTSVoice Settings** (two tabs: **Voice** 
 | `ProximityRangeMeters` | How far proximity voice carries, in meters (5 to 500) | 75 (like the game) |
 | `bProximitySameTeamOnly` | Proximity voice only reaches your own team. Off: enemies close by hear you too | Off |
 | `bLetDeadTalkToLiving` | Living players can hear the dead (not counting Squad voice) | Off |
+| `bEnemiesOverhear` | Enemies within the proximity range overhear Squad, Team, Vehicle and Command talk, from the talker's direction, as if they heard them speak. Teammates still hear it on the channel as usual. Overheard enemies aren't named in the voice pop-up | Off |
 | `TeamSpeakAddress` | The TeamSpeak server players should join. Shown by `mutate tsvoice` | Empty |
 | `TeamSpeakChannel` | Where players should sit while playing. Shown by `mutate tsvoice` | Empty |
 
@@ -127,7 +129,7 @@ The TeamSpeak headers belong to TeamSpeak, so they are not kept in git.
 - **Test harness** (`THSuiteTSVoice`, 2026-11-14: 69 passed, 0 failed; the "no plugin" check skips while a TeamSpeak plugin runs on the test PC, as it should):
   - the WebAdmin settings page: its tabs and labels, showing the running values, saving them (to every player straight away) and putting them back;
   - who hears whom on every channel, including the dead, spectators, enemies and the settings;
-  - Squad following the TeamSpeak channel, and the main voice key always talking in it;
+  - Squad following the TeamSpeak channel, and the main voice key following the game's Change Voice Channel setting;
   - which game key talks on which channel;
   - every player getting their info;
   - `mutate tsvoice`, `on`, `off` and `who`;

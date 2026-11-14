@@ -12,6 +12,7 @@ class MutTSVoice extends ROMutator
 var config float    ProximityRangeMeters;       // How far proximity voice carries, in meters (0: 75, like the game)
 var config bool     bLetDeadTalkToLiving;       // Dead players can be heard by living ones (off: dead hear dead only)
 var config bool     bProximitySameTeamOnly;     // Proximity voice only reaches your own team (off: enemies nearby hear you)
+var config bool     bEnemiesOverhear;           // Enemies close by overhear Squad, Team, Vehicle and Command talk (off by default)
 var config string   TeamSpeakAddress;           // Shown to players: the TeamSpeak server to join
 var config string   TeamSpeakChannel;           // Shown to players: where to sit while playing (Squad voice is your own channel)
 

@@ -16,6 +16,7 @@ var bool    bPluginLinked;  // the player's TeamSpeak plugin is linked to their 
 var float   ProximityRange;
 var bool    bLetDeadTalkToLiving;
 var bool    bProximitySameTeamOnly;
+var bool    bEnemiesOverhear;
 var string  TeamSpeakAddress;
 var string  TeamSpeakChannel;
 
@@ -29,7 +30,7 @@ replication
     if (bNetDirty)
         PRI, SteamId, TSChannel, TSChannelName, VoiceChannel, bPluginLinked;
     if (bNetDirty && bNetOwner)
-        ProximityRange, bLetDeadTalkToLiving, bProximitySameTeamOnly, TeamSpeakAddress, TeamSpeakChannel;
+        ProximityRange, bLetDeadTalkToLiving, bProximitySameTeamOnly, bEnemiesOverhear, TeamSpeakAddress, TeamSpeakChannel;
 }
 
 simulated event PostBeginPlay()
@@ -59,6 +60,7 @@ function CopySettings()
     ProximityRange = Mut.GetProximityRange();
     bLetDeadTalkToLiving = Mut.bLetDeadTalkToLiving;
     bProximitySameTeamOnly = Mut.bProximitySameTeamOnly;
+    bEnemiesOverhear = Mut.bEnemiesOverhear;
     TeamSpeakAddress = Mut.TeamSpeakAddress;
     TeamSpeakChannel = Mut.TeamSpeakChannel;
 }

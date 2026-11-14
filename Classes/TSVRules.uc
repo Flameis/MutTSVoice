@@ -43,6 +43,7 @@ struct TSVRuleSettings
     var float   ProximityRange;         // unreal units
     var bool    bLetDeadTalkToLiving;
     var bool    bProximitySameTeamOnly;
+    var bool    bEnemiesOverhear;       // enemies close by overhear Squad, Team, Vehicle and Command talk
 
     structdefaultproperties
     {
@@ -54,6 +55,10 @@ static function bool CanHear(TSVPlayerState Talker, TSVPlayerState Listener, byt
 {
     if (Talker.SteamId == "" || Talker.SteamId == Listener.SteamId)
         return false;
+
+    // With the server's bEnemiesOverhear, an enemy close by overhears the channels that are otherwise private
+    if (Overhears(Talker, Listener, Channel, S))
+        return true;
 
     // Squad is the TeamSpeak channel itself: everyone sitting in it hears, whatever their team or state in the game
     if (Channel == CH_SQUAD)
@@ -83,6 +88,20 @@ static function bool CanHear(TSVPlayerState Talker, TSVPlayerState Listener, byt
                 && (!S.bProximitySameTeamOnly || Talker.Team == Listener.Team);
     }
     return false;
+}
+
+// An enemy within proximity range overhearing Squad, Team, Vehicle or Command talk, as if they heard the talker speak
+// (only with the server's bEnemiesOverhear; both alive, both on a team). They hear it from the talker's direction.
+static function bool Overhears(TSVPlayerState Talker, TSVPlayerState Listener, byte Channel, TSVRuleSettings S)
+{
+    if (!S.bEnemiesOverhear)
+        return false;
+    if (Channel != CH_SQUAD && Channel != CH_TEAM && Channel != CH_VEHICLE && Channel != CH_COMMAND)
+        return false;
+    if (Talker.SteamId == "" || Talker.SteamId == Listener.SteamId)
+        return false;
+    return Talker.Team < 2 && Listener.Team < 2 && Talker.Team != Listener.Team && !Talker.bDead && !Listener.bDead
+        && Talker.bHasLocation && Listener.bHasLocation && VSize(Talker.Location - Listener.Location) <= S.ProximityRange;
 }
 
 static function string ChannelName(byte Channel)

@@ -27,6 +27,7 @@ var array<byte>     KeyChannels;        // ...and the channel each talks on (CH_
 var bool            bTSConnected;       // the plugin says TeamSpeak is connected to a server
 var bool            bAnnouncedLink;
 var name            HeldKey;
+var byte            HeldKeyChannel;     // the channel the held key asks for (CH_CURRENT: the game's channel setting)
 var byte            TalkChannel;
 var float           TargetsAge;
 var string          LastTargets;
@@ -282,9 +283,52 @@ function bool IsTyping()
 // Talking
 // ====================================================
 
+// The channel picked with the game's Change Voice Channel key (ROPlayerController.CurrentVOIPChannel: public, team,
+// squad, vehicle, proximity, command), as a TeamSpeak channel. Team when it can't be read.
+function byte GameChannelSetting()
+{
+    local ROPlayerController ROPC;
+
+    ROPC = (Info != None) ? ROPlayerController(Info.ToolOwner) : None;
+    if (ROPC == None)
+        return class'TSVRules'.const.CH_TEAM;
+    return ChannelForGameSetting(ROPC.CurrentVOIPChannel);
+}
+
+static function byte ChannelForGameSetting(byte GameChannel)
+{
+    switch (GameChannel)
+    {
+        case 0: return class'TSVRules'.const.CH_ALL;       // EVOIP_Public
+        case 1: return class'TSVRules'.const.CH_TEAM;      // EVOIP_Team
+        case 2: return class'TSVRules'.const.CH_SQUAD;     // EVOIP_Squad: the player's TeamSpeak channel
+        case 3: return class'TSVRules'.const.CH_VEHICLE;   // EVOIP_Vehicle
+        case 4: return class'TSVRules'.const.CH_PROXIMITY; // EVOIP_Proximity
+        case 5: return class'TSVRules'.const.CH_COMMAND;   // EVOIP_Command
+    }
+    return class'TSVRules'.const.CH_TEAM;
+}
+
+// Pressing Change Voice Channel while holding the main voice key moves the talk to the new channel at once
+function FollowChannelSetting()
+{
+    local byte Ch;
+    local name Key;
+
+    if (HeldKey == 'None' || HeldKeyChannel != class'TSVRules'.const.CH_CURRENT)
+        return;
+    Ch = ResolveChannel(class'TSVRules'.const.CH_CURRENT);
+    if (Ch == TalkChannel || Ch == class'TSVRules'.const.CH_NONE)
+        return;
+    Key = HeldKey;
+    StopTalk();
+    StartTalk(class'TSVRules'.const.CH_CURRENT, Key);
+}
+
 function StartTalk(byte Ch, name Key)
 {
     HeldKey = Key;
+    HeldKeyChannel = Ch;
     Gather();
     Ch = ResolveChannel(Ch);
     if (Ch == class'TSVRules'.const.CH_NONE)
@@ -311,14 +355,14 @@ function StopTalk()
     TalkChannel = class'TSVRules'.const.CH_NONE;
 }
 
-// The game's main voice key is TeamSpeak's own push-to-talk (the player's channel), whatever the game's channel setting.
-// The other keys fall back as the game does for a channel this player can't talk on now (no vehicle, not a leader: team).
+// The game's main voice key talks on the channel the game's Change Voice Channel key (O) has picked, as in the game.
+// Every key falls back as the game does for a channel this player can't talk on now (no vehicle, not a leader: team).
 function byte ResolveChannel(byte Ch)
 {
     local TSVRules.TSVPlayerState Me;
 
     if (Ch == class'TSVRules'.const.CH_CURRENT)
-        Ch = class'TSVRules'.const.CH_SQUAD; // the main voice key is always TeamSpeak's own: talk in your channel
+        Ch = GameChannelSetting();
     if (MyIndex == INDEX_NONE)
         return Ch;
     Me = Seen[MyIndex].State;
@@ -340,10 +384,15 @@ function SendTargets()
     local string All, Line;
     local int i, n;
 
-    // Squad is plain talk in the TeamSpeak channel: no one to pick
-    if (TalkChannel == class'TSVRules'.const.CH_NONE || TalkChannel == class'TSVRules'.const.CH_SQUAD || MyIndex == INDEX_NONE)
+    // Squad is plain talk in the TeamSpeak channel: no one to pick, unless enemies close by overhear it
+    if (TalkChannel == class'TSVRules'.const.CH_NONE || MyIndex == INDEX_NONE)
         return;
-    Ids = TargetsFor(MyIndex, TalkChannel);
+    if (TalkChannel == class'TSVRules'.const.CH_SQUAD && !Info.bEnemiesOverhear)
+        return;
+    if (TalkChannel == class'TSVRules'.const.CH_SQUAD)
+        Ids = OverhearersOf(MyIndex, TalkChannel);
+    else
+        Ids = TargetsFor(MyIndex, TalkChannel);
     for (i = 0; i < Ids.Length; i++)
         All $= Ids[i]$" ";
     if (All == LastTargets && TargetsAge < 1.0)
@@ -383,6 +432,23 @@ function array<string> TargetsFor(int TalkerIndex, byte Ch)
     return Ids;
 }
 
+// The enemies close enough to overhear this talker (bEnemiesOverhear), for Squad talk: the channel hears it anyway
+function array<string> OverhearersOf(int TalkerIndex, byte Ch)
+{
+    local array<string> Ids;
+    local TSVRules.TSVRuleSettings S;
+    local int i;
+
+    S = Settings();
+    for (i = 0; i < Seen.Length; i++)
+    {
+        if (i != TalkerIndex && Seen[i].Info.bPluginLinked
+            && class'TSVRules'.static.Overhears(Seen[TalkerIndex].State, Seen[i].State, Ch, S))
+            Ids.AddItem(Seen[i].State.SteamId);
+    }
+    return Ids;
+}
+
 function TSVRules.TSVRuleSettings Settings()
 {
     local TSVRules.TSVRuleSettings S;
@@ -390,6 +456,7 @@ function TSVRules.TSVRuleSettings Settings()
     S.ProximityRange = Info.ProximityRange;
     S.bLetDeadTalkToLiving = Info.bLetDeadTalkToLiving;
     S.bProximitySameTeamOnly = Info.bProximitySameTeamOnly;
+    S.bEnemiesOverhear = Info.bEnemiesOverhear;
     return S;
 }
 
@@ -409,6 +476,7 @@ function Frame(float DeltaTime)
     Gather();
 
     TargetsAge += DeltaTime;
+    FollowChannelSetting();
     if (TalkChannel != class'TSVRules'.const.CH_NONE)
         SendTargets();
 
@@ -421,8 +489,11 @@ function Frame(float DeltaTime)
         S = Settings();
         for (i = 0; i < Seen.Length; i++)
         {
-            if (i != MyIndex && Seen[i].Info.VoiceChannel == class'TSVRules'.const.CH_PROXIMITY && Seen[i].State.bHasLocation
-                && class'TSVRules'.static.CanHear(Seen[i].State, Seen[MyIndex].State, class'TSVRules'.const.CH_PROXIMITY, S))
+            // Proximity talkers, and talkers this player overhears (bEnemiesOverhear), come from where they stand
+            if (i != MyIndex && Seen[i].State.bHasLocation
+                && ((Seen[i].Info.VoiceChannel == class'TSVRules'.const.CH_PROXIMITY
+                    && class'TSVRules'.static.CanHear(Seen[i].State, Seen[MyIndex].State, class'TSVRules'.const.CH_PROXIMITY, S))
+                || class'TSVRules'.static.Overhears(Seen[i].State, Seen[MyIndex].State, Seen[i].Info.VoiceChannel, S)))
             {
                 Send("POS "$Seen[i].State.SteamId@int(Seen[i].State.Location.X)@int(Seen[i].State.Location.Y)@int(Seen[i].State.Location.Z));
             }
@@ -542,7 +613,8 @@ function TSVRules.TSVPlayerState MakeState(TSVPlayerInfo PInfo, array<Pawn> Pawn
 // ====================================================
 
 // TeamSpeak talkers this player hears (and the player themselves) show in the game's own voice pop-up on the left
-// (ROHUDWidgetVOIPTalkers), in its next free rows after anyone on the game's voice chat: the name in the game's HUD font,
+// (ROHUDWidgetVOIPTalkers), in its next free rows after anyone on the game's voice chat (enemies on local voice are heard
+// but not shown): the name in the game's HUD font,
 // the channel under it in its plain font, in team colours with the same drop shadow, scaled with the HUD as it is.
 event PostRender(Canvas C)
 {
@@ -571,9 +643,24 @@ event PostRender(Canvas C)
         if (!bMe && (MyIndex == INDEX_NONE
             || !class'TSVRules'.static.CanHear(Seen[i].State, Seen[MyIndex].State, Seen[i].Info.VoiceChannel, S)))
             continue;
+        // An enemy talking on local (proximity) voice is heard but not named
+        if (!bMe && !ShowsTalker(Seen[i].State, Seen[MyIndex].State, Seen[i].Info.VoiceChannel))
+            continue;
         DrawTalkerRow(C, W, Row, Seen[i].Info);
         Row++;
     }
+}
+
+// Whether a talker this player hears is shown in the voice pop-up: teammates always; a talker on another team (or with no
+// team) only on All. An enemy on local voice, or one overheard on their own channel, is heard but not named.
+static function bool ShowsTalker(TSVRules.TSVPlayerState Talker, TSVRules.TSVPlayerState Me, byte Channel)
+{
+    if (Channel == class'TSVRules'.const.CH_ALL)
+        return true;
+    if (Talker.Team < 2 && Talker.Team == Me.Team)
+        return true;
+    // Squad is the TeamSpeak channel: someone sitting in it is shown whatever their team
+    return Channel == class'TSVRules'.const.CH_SQUAD && Talker.TSChannel != "" && Talker.TSChannel == Me.TSChannel;
 }
 
 // One row of the game's voice pop-up: the name and channel components of that row, as the game would draw them

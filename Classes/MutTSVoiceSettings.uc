@@ -16,6 +16,7 @@ function InitMutSettings()
         self.SetFloatPropertyByName('ProximityRangeMeters', ShownRange(class'MutTSVoice'.default.ProximityRangeMeters));
         self.SetIntPropertyByName('bProximitySameTeamOnly', int(class'MutTSVoice'.default.bProximitySameTeamOnly));
         self.SetIntPropertyByName('bLetDeadTalkToLiving', int(class'MutTSVoice'.default.bLetDeadTalkToLiving));
+        self.SetIntPropertyByName('bEnemiesOverhear', int(class'MutTSVoice'.default.bEnemiesOverhear));
         self.SetStringPropertyByName('TeamSpeakAddress', class'MutTSVoice'.default.TeamSpeakAddress);
         self.SetStringPropertyByName('TeamSpeakChannel', class'MutTSVoice'.default.TeamSpeakChannel);
     }
@@ -24,6 +25,7 @@ function InitMutSettings()
         self.SetFloatPropertyByName('ProximityRangeMeters', ShownRange(MutTSVoice(self.myMut).ProximityRangeMeters));
         self.SetIntPropertyByName('bProximitySameTeamOnly', int(MutTSVoice(self.myMut).bProximitySameTeamOnly));
         self.SetIntPropertyByName('bLetDeadTalkToLiving', int(MutTSVoice(self.myMut).bLetDeadTalkToLiving));
+        self.SetIntPropertyByName('bEnemiesOverhear', int(MutTSVoice(self.myMut).bEnemiesOverhear));
         self.SetStringPropertyByName('TeamSpeakAddress', MutTSVoice(self.myMut).TeamSpeakAddress);
         self.SetStringPropertyByName('TeamSpeakChannel', MutTSVoice(self.myMut).TeamSpeakChannel);
     }
@@ -32,12 +34,13 @@ function InitMutSettings()
 function SaveMutSettings()
 {
     local float Range;
-    local int SameTeam, DeadToLiving;
+    local int SameTeam, DeadToLiving, Overhear;
     local string Address, Channel;
 
     self.GetFloatPropertyByName('ProximityRangeMeters', Range);
     self.GetIntPropertyByName('bProximitySameTeamOnly', SameTeam);
     self.GetIntPropertyByName('bLetDeadTalkToLiving', DeadToLiving);
+    self.GetIntPropertyByName('bEnemiesOverhear', Overhear);
     self.GetStringPropertyByName('TeamSpeakAddress', Address);
     self.GetStringPropertyByName('TeamSpeakChannel', Channel);
     Range = FClamp(Range, 5.0, 500.0);
@@ -47,6 +50,7 @@ function SaveMutSettings()
         class'MutTSVoice'.default.ProximityRangeMeters = Range;
         class'MutTSVoice'.default.bProximitySameTeamOnly = (SameTeam != 0);
         class'MutTSVoice'.default.bLetDeadTalkToLiving = (DeadToLiving != 0);
+        class'MutTSVoice'.default.bEnemiesOverhear = (Overhear != 0);
         class'MutTSVoice'.default.TeamSpeakAddress = Address;
         class'MutTSVoice'.default.TeamSpeakChannel = Channel;
         class'MutTSVoice'.static.StaticSaveConfig();
@@ -56,6 +60,7 @@ function SaveMutSettings()
         MutTSVoice(self.myMut).ProximityRangeMeters = Range;
         MutTSVoice(self.myMut).bProximitySameTeamOnly = (SameTeam != 0);
         MutTSVoice(self.myMut).bLetDeadTalkToLiving = (DeadToLiving != 0);
+        MutTSVoice(self.myMut).bEnemiesOverhear = (Overhear != 0);
         MutTSVoice(self.myMut).TeamSpeakAddress = Address;
         MutTSVoice(self.myMut).TeamSpeakChannel = Channel;
         self.myMut.SaveConfig();
@@ -78,6 +83,8 @@ defaultproperties
     PropertyMappings.Add((Id=101,Name="bProximitySameTeamOnly",MappingType=PVMT_IdMapped,ValueMappings=((Id=0),(Id=1))))
     Properties.Add((PropertyId=102,Data=(Type=SDT_Int32,Value1=0)))
     PropertyMappings.Add((Id=102,Name="bLetDeadTalkToLiving",MappingType=PVMT_IdMapped,ValueMappings=((Id=0),(Id=1))))
+    Properties.Add((PropertyId=103,Data=(Type=SDT_Int32,Value1=0)))
+    PropertyMappings.Add((Id=103,Name="bEnemiesOverhear",MappingType=PVMT_IdMapped,ValueMappings=((Id=0),(Id=1))))
 
     Properties.Add((PropertyId=110,Data=(Type=SDT_String)))
     PropertyMappings.Add((Id=110,Name="TeamSpeakAddress",MappingType=PVMT_RawValue,MinVal=0,MaxVal=128))
