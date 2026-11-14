@@ -32,7 +32,7 @@ There are two parts:
 3. **Join the TeamSpeak server** the game server names (type `mutate tsvoice` in the game to see it). Sit in your squad's channel: that channel is your Squad voice.
 4. **Play.** When the game finds the plugin you see *"[TS Voice] Linked to TeamSpeak"*. From then on your voice keys talk on TeamSpeak.
 
-While the game is linked, the plugin keeps your microphone off until you hold a voice key, and mutes TeamSpeak's own sounds (its notification sounds, including the "pssst" whisper sound that would play every time someone talks to you on a game channel). When you leave the game, your microphone and TeamSpeak's sound volume go back to how they were.
+While the game is linked, the plugin keeps your microphone off until you hold a voice key. When you leave the game, your microphone goes back to how it was.
 
 ## 2. The voice channels
 
