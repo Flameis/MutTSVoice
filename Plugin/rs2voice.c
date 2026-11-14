@@ -486,6 +486,26 @@ static void handleLine(char* line)
     {
         giveBack();
     }
+    else if (strcmp(tok[0], "STATE") == 0)
+    {
+        /* For checking and fault finding: the plugin's own view */
+        int deact = -1, i, spatial = 0;
+        anyID me = 0;
+        uint64 ch = 0;
+        unsigned int e1 = 0, e2 = 0, e3 = 0;
+        if (g_tsConnected)
+        {
+            e1 = ts3.getClientSelfVariableAsInt(g_sch, CLIENT_INPUT_DEACTIVATED, &deact);
+            e2 = ts3.getClientID(g_sch, &me);
+            e3 = ts3.getChannelOfClient(g_sch, me, &ch);
+        }
+        ensureMap();
+        for (i = 0; i < g_numMap; i++)
+            spatial += g_map[i].spatial;
+        sendGame("STATE ts=%d linked=%d mic=%s talking=%d channel=%d targets=%d mapped=%d spatial=%d me=%u tschan=%llu errs=%u,%u,%u",
+            g_tsConnected, g_savedInput >= 0, deact == INPUT_ACTIVE ? "on" : (deact == INPUT_DEACTIVATED ? "off" : "?"),
+            g_talking, g_talkChannel, g_numTargets, g_numMap, spatial, (unsigned)me, (unsigned long long)ch, e1, e2, e3);
+    }
     LeaveCriticalSection(&g_lock);
 }
 
