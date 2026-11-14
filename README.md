@@ -26,7 +26,7 @@ There are two parts:
 
 ## 1. For players: setting up
 
-1. **Install the plugin:** double-click `RS2Voice.ts3_plugin` and TeamSpeak installs it. Then check it is ticked under TeamSpeak's *Tools > Options > Addons*.
+1. **Install the plugin:** quit TeamSpeak completely (also from the system tray), then double-click `RS2Voice.ts3_plugin` and TeamSpeak installs it. Installing while TeamSpeak is open, or over an older copy it has loaded, can leave an empty plugin file; TeamSpeak then says the plugin is a "Bad Image" or fails to load it (LoadLibrary error 193). Quit TeamSpeak and install again to fix it. Then check it is ticked under TeamSpeak's *Tools > Options > Addons*.
 2. **TeamSpeak's microphone setting:** while the game is running, the plugin keeps your microphone off and only turns it on while you hold a voice key in the game. Voice Activation or Continuous Transmission work best. Push-to-Talk works too, but then your TeamSpeak key still talks into your channel as well.
 3. **Join the TeamSpeak server** the game server names (type `mutate tsvoice` in the game to see it). Sit in your squad's channel: that channel is your Squad voice.
 4. **Play.** When the game finds the plugin you see *"[TS Voice] Linked to TeamSpeak"*. From then on your voice keys talk on TeamSpeak.
