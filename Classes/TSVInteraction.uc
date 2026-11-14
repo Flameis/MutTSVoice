@@ -7,11 +7,12 @@
 //    follows people as they move.
 //  - Ten times a second it tells the plugin where the camera is and where each proximity talker this player can hear
 //    is standing, so their voice comes from that direction and fades with distance.
-//  - Draws a short list of who is talking on TeamSpeak that this player can hear.
+//  - Shows who is talking on TeamSpeak that this player can hear in the game's own voice pop-up on the left.
 class TSVInteraction extends Interaction
     dependson(TSVRules)
     config(MutTSVoice_Client);
 
+const MAX_TALKER_ROWS = 4; // the rows of the game's voice pop-up (ROHUDWidgetVOIPTalkers)
 var config int      PluginPort;         // The plugin's local port (0: 25700)
 var config bool     bDisableTalkerList; // Don't draw who is talking
 var config bool     bDisableTeamSpeak;  // The player turned TeamSpeak voice off (mutate tsvoice off): every voice key uses
@@ -540,24 +541,29 @@ function TSVRules.TSVPlayerState MakeState(TSVPlayerInfo PInfo, array<Pawn> Pawn
 // Who is talking
 // ====================================================
 
+// TeamSpeak talkers this player hears (and the player themselves) show in the game's own voice pop-up on the left
+// (ROHUDWidgetVOIPTalkers), in its next free rows after anyone on the game's voice chat: the name in the game's HUD font,
+// the channel under it in its plain font, in team colours with the same drop shadow, scaled with the HUD as it is.
 event PostRender(Canvas C)
 {
     local TSVRules.TSVRuleSettings S;
-    local float X, Y, XL, YL;
-    local int i;
-    local bool bMe, bHeader;
-    local string Line;
+    local ROHUD H;
+    local ROHUDWidgetVOIPTalkers W;
+    local int i, Row;
+    local bool bMe;
 
-    if (bDisableTalkerList || !bTSConnected || C == None || Seen.Length == 0)
+    if (bDisableTalkerList || !bTSConnected || C == None || Seen.Length == 0 || Info == None || Info.ToolOwner == None)
+        return;
+    H = ROHUD(Info.ToolOwner.myHUD);
+    if (H == None || !H.bShowHUD)
+        return;
+    W = H.VOIPTalkersWidget;
+    if (W == None)
         return;
 
     S = Settings();
-    C.Font = class'Engine'.static.GetSmallFont();
-    C.TextSize("Ag", XL, YL);
-    X = C.ClipX * 0.80;
-    Y = C.ClipY * 0.30;
-
-    for (i = 0; i < Seen.Length; i++)
+    Row = Min(W.TalkerPRIs.Length, MAX_TALKER_ROWS);
+    for (i = 0; i < Seen.Length && Row < MAX_TALKER_ROWS; i++)
     {
         if (Seen[i].Info == None || Seen[i].Info.VoiceChannel == 0 || Seen[i].Info.PRI == None)
             continue;
@@ -565,23 +571,72 @@ event PostRender(Canvas C)
         if (!bMe && (MyIndex == INDEX_NONE
             || !class'TSVRules'.static.CanHear(Seen[i].State, Seen[MyIndex].State, Seen[i].Info.VoiceChannel, S)))
             continue;
-        if (!bHeader)
-        {
-            bHeader = true;
-            C.SetDrawColor(200, 200, 200, 200);
-            C.SetPos(X, Y);
-            C.DrawText("TeamSpeak");
-            Y += YL;
-        }
-        Line = Seen[i].Info.PRI.PlayerName$" ("$class'TSVRules'.static.ChannelName(Seen[i].Info.VoiceChannel)$")";
-        if (bMe)
-            C.SetDrawColor(120, 220, 120, 230);
-        else
-            C.SetDrawColor(255, 255, 255, 230);
-        C.SetPos(X, Y);
-        C.DrawText(Line);
-        Y += YL;
+        DrawTalkerRow(C, W, Row, Seen[i].Info);
+        Row++;
     }
+}
+
+// One row of the game's voice pop-up: the name and channel components of that row, as the game would draw them
+function DrawTalkerRow(Canvas C, ROHUDWidgetVOIPTalkers W, int Row, TSVPlayerInfo Talker)
+{
+    local color Col;
+    local int Team, GameChannel;
+    local ROPlayerReplicationInfo ROPRI;
+
+    ROPRI = ROPlayerReplicationInfo(Talker.PRI);
+    Team = (Talker.PRI.Team != None) ? Talker.PRI.Team.TeamIndex : 255;
+    // The game's colours: team colours, white for the commander on this player's team on team or command voice
+    if (ROPRI != None && ROPRI.RoleInfo != None && ROPRI.RoleInfo.bIsTeamLeader && Team == Info.ToolOwner.GetTeamNum()
+        && (Talker.VoiceChannel == class'TSVRules'.const.CH_TEAM || Talker.VoiceChannel == class'TSVRules'.const.CH_COMMAND))
+        Col = W.CommanderTeamChatColor;
+    else if (Team < 2)
+        Col = W.TeamColor[Team];
+    else
+        Col = W.NoTeamColor;
+
+    GameChannel = GameVoiceChannel(Talker.VoiceChannel);
+    DrawComponentText(C, W, W.HUDComponents[Row * 2], Talker.PRI.PlayerName, Col);
+    DrawComponentText(C, W, W.HUDComponents[Row * 2 + 1], (GameChannel >= 0) ? W.VOIPChannelStrings[GameChannel]
+        : class'TSVRules'.static.ChannelName(Talker.VoiceChannel), Col);
+}
+
+// The game's channel names (ROHUDWidgetVOIPTalkers.VOIPChannelStrings: PUBLIC, TEAM, SQUAD, VEHICLE, ..., LOCAL,
+// COMMAND) for a TeamSpeak voice channel, or -1 for none
+static function int GameVoiceChannel(byte Channel)
+{
+    switch (Channel)
+    {
+        case class'TSVRules'.const.CH_ALL:       return 0;
+        case class'TSVRules'.const.CH_TEAM:      return 1;
+        case class'TSVRules'.const.CH_SQUAD:     return 2;
+        case class'TSVRules'.const.CH_VEHICLE:   return 3;
+        case class'TSVRules'.const.CH_PROXIMITY: return 6;
+        case class'TSVRules'.const.CH_COMMAND:   return 7;
+    }
+    return -1;
+}
+
+// Text where a component of the widget sits, in its font and scale (as laid out for this screen size), with its shadow
+function DrawComponentText(Canvas C, ROHUDWidget W, ROHUDWidgetComponent Comp, string Text, color Col)
+{
+    local float X, Y, SX, SY;
+
+    if (Comp == None || Comp.TextFont == None || Text == "")
+        return;
+    X = W.CurrentX + Comp.CurX;
+    Y = W.CurrentY + Comp.CurY;
+    SX = Comp.TextScale * Comp.TextScaleX * Comp.ScaleX;
+    SY = Comp.TextScale * Comp.TextScaleY * Comp.ScaleY;
+    C.Font = Comp.TextFont;
+    if (Comp.bDropShadow)
+    {
+        C.DrawColor = Comp.DropShadowColor;
+        C.SetPos(X + Comp.DropShadowOffset.X, Y + Comp.DropShadowOffset.Y);
+        C.DrawText(Text, false, SX, SY);
+    }
+    C.DrawColor = Col;
+    C.SetPos(X, Y);
+    C.DrawText(Text, false, SX, SY);
 }
 
 defaultproperties

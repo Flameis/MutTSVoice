@@ -50,7 +50,7 @@ These are the game's normal voice keys. Nothing new to learn.
 - If you can't talk on a channel right now, the key talks to your team instead, the same as the game does (Vehicle with no vehicle, Command when you aren't a leader).
 - **The dead** are heard only by other dead players, the same as the game, unless the server changes that. Squad voice is not affected: it is plain talk in your TeamSpeak channel.
 - **Spectators** reach only other spectators, except in Squad voice.
-- On the right of the screen, a short list shows who is talking on TeamSpeak that you can hear, and on which channel.
+- Who is talking on TeamSpeak that you can hear (and you, while you talk) shows on the left of the screen in the game's own voice pop-up, exactly like the game's voice chat: the name in the game's HUD font with the channel (TEAM, SQUAD, LOCAL, ...) under it, in team colours. It uses the pop-up's free rows, after anyone on the game's own voice chat, up to its 4 rows.
 - Only players who have the plugin running can hear TeamSpeak voice. Everyone else uses the game's voice chat.
 
 ## 3. Commands
