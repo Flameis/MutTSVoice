@@ -1,0 +1,20 @@
+"workshopitem"
+{
+	"appid"			"418460"
+	"publishedfileid"	"0"
+	"contentfolder"		""
+	"title"			"29th TeamSpeak Voice"
+	"description"		"[h1]29th TeamSpeak Voice[/h1]The game's voice keys talk through TeamSpeak 3 instead of the game's own voice chat. Players need the RS2 Voice TeamSpeak plugin: [url=https://github.com/Flameis/MutTSVoice/releases]download it here[/url].
+
+[h2]What it does[/h2][list]
+[*][b]Voice Chat key and Squad voice:[/b] everyone in your TeamSpeak channel hears you, like TeamSpeak's own push-to-talk.
+[*][b]Team, All, Vehicle and Command voice:[/b] reach exactly the players the game would pick, wherever they sit on the TeamSpeak server.
+[*][b]Proximity voice:[/b] anyone within 75 m (enemies too) hears you from your direction, fading with distance.
+[*][b]Players without the plugin[/b] keep the game's voice chat, and players can turn TeamSpeak voice off with mutate tsvoice off.
+[/list]Settings (proximity range, the TeamSpeak address shown to players) are on the server's WebAdmin Mutators page.
+
+[b]In development:[/b] voice between several players has not been fully tried yet.
+
+Made by the 29th Infantry Division Engineer Corps."
+	"changenote"		""
+}
