@@ -65,11 +65,11 @@ These are the game's normal voice keys. Nothing new to learn.
 
 ## 4. Server settings
 
-In `ROMutTSVoice_Server.ini` on the server, under `[MutTSVoice.MutTSVoice]`:
+On the WebAdmin **Mutators** page, **MutTSVoice Settings** (two tabs: **Voice** and **TeamSpeak server**), or in `ROMutTSVoice_Server.ini` on the server under `[MutTSVoice.MutTSVoice]`. Changes from the WebAdmin page apply to everyone straight away. The page needs the server's `MutatorSettings` package and `MutTSVoice.int` (its labels).
 
 | Setting | What it does | Default |
 | :--- | :--- | :--- |
-| `ProximityRangeMeters` | How far proximity voice carries, in meters | 75 (like the game) |
+| `ProximityRangeMeters` | How far proximity voice carries, in meters (5 to 500) | 75 (like the game) |
 | `bProximitySameTeamOnly` | Proximity voice only reaches your own team. Off: enemies close by hear you too | Off |
 | `bLetDeadTalkToLiving` | Living players can hear the dead (not counting Squad voice) | Off |
 | `TeamSpeakAddress` | The TeamSpeak server players should join. Shown by `mutate tsvoice` | Empty |
@@ -124,7 +124,8 @@ The TeamSpeak headers belong to TeamSpeak, so they are not kept in git.
   - it turns the microphone off while the game is linked, on while Squad is held, and off again when the key is let go;
   - holding another key with nobody to hear (or nobody on TeamSpeak) keeps the microphone off, so nothing goes to the whole channel by mistake;
   - when the game leaves, the microphone goes back to exactly how it was.
-- **Test harness** (`THSuiteTSVoice`, 2026-11-14: 56 passed, 0 failed without TeamSpeak; with TeamSpeak connected, 55 passed and the "no plugin" check skipped, as it should):
+- **Test harness** (`THSuiteTSVoice`, 2026-11-14: 69 passed, 0 failed; the "no plugin" check skips while a TeamSpeak plugin runs on the test PC, as it should):
+  - the WebAdmin settings page: its tabs and labels, showing the running values, saving them (to every player straight away) and putting them back;
   - who hears whom on every channel, including the dead, spectators, enemies and the settings;
   - Squad following the TeamSpeak channel, and the main voice key always talking in it;
   - which game key talks on which channel;
