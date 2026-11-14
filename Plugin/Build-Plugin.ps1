@@ -46,7 +46,17 @@ Description = Rising Storm 2 voice through TeamSpeak: all, team, squad, 29th squ
 $zip = Join-Path $Build "RS2Voice.zip"
 $out = Join-Path $Build "RS2Voice.ts3_plugin"
 Remove-Item $zip, $out -ErrorAction SilentlyContinue
-Compress-Archive -Path (Join-Path $pkg "*") -DestinationPath $zip
+# Written entry by entry with forward slashes: Windows PowerShell's Compress-Archive stores "plugins\rs2voice_win64.dll"
+# with a backslash, and TeamSpeak's installer then leaves an empty plugin file when it installs over an existing copy
+Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+$archive = [System.IO.Compression.ZipFile]::Open($zip, [System.IO.Compression.ZipArchiveMode]::Create)
+try {
+    foreach ($entry in @("package.ini", "plugins/rs2voice_win64.dll")) {
+        [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, (Join-Path $pkg ($entry -replace '/', '\')), $entry,
+            [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
+    }
+}
+finally { $archive.Dispose() }
 Move-Item $zip $out
 Write-Host "[Build-Plugin] Installer: $out"
 
