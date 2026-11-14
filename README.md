@@ -1,10 +1,10 @@
 # MutTSVoice - TeamSpeak voice for Rising Storm 2
 
-*In development: it builds, but it has not been tried in a real game with TeamSpeak yet. See section 8.*
+*In development: the game and the plugin link and talk to each other, but voice has not yet been tried between players on a TeamSpeak server. See section 8.*
 
-MutTSVoice moves the game's voice chat onto **TeamSpeak 3**. Players keep their normal voice keys. While their TeamSpeak plugin is running, those keys talk through TeamSpeak instead of the game's own voice chat:
+MutTSVoice moves the game's voice chat onto **TeamSpeak 3**. Players keep their normal voice keys. While their TeamSpeak plugin is running (and they haven't turned it off with `mutate tsvoice off`), those keys talk through TeamSpeak instead of the game's own voice chat:
 
-- **Squad** voice is your **TeamSpeak channel**: everyone sitting in the same TeamSpeak channel as you hears you.
+- **The main Voice Chat key and Squad voice** are your **TeamSpeak channel**, like TeamSpeak's own push-to-talk: everyone sitting in the same TeamSpeak channel as you hears you.
 - **All, Team, Vehicle and Command** voice reach exactly the players the game would pick, wherever they sit on the TeamSpeak server.
 - **Proximity** voice comes from the speaker's direction and fades out with distance.
 
@@ -45,7 +45,7 @@ These are the game's normal voice keys. Nothing new to learn.
 | Vehicle voice | The crew of your vehicle or helicopter |
 | Command voice | Squad leaders and the commander of your team (you must be one) |
 | Proximity voice | Anyone within 75 meters, **including enemies**. Their voice comes from your direction and gets quieter with distance |
-| The main voice key | Whatever channel the game's "change voice channel" key is set to |
+| The main Voice Chat key (CapsLock by default) | Always your TeamSpeak channel, like TeamSpeak's own push-to-talk, whatever the game's "change voice channel" key is set to |
 
 - If you can't talk on a channel right now, the key talks to your team instead, the same as the game does (Vehicle with no vehicle, Command when you aren't a leader).
 - **The dead** are heard only by other dead players, the same as the game, unless the server changes that. Squad voice is not affected: it is plain talk in your TeamSpeak channel.
@@ -58,12 +58,14 @@ These are the game's normal voice keys. Nothing new to learn.
 | Command | What it does |
 | :--- | :--- |
 | `mutate tsvoice` | Shows the server's TeamSpeak address, whether your plugin is linked, and your TeamSpeak channel |
+| `mutate tsvoice off` | Turns TeamSpeak voice off for you: all your voice keys use the game's voice chat, and the plugin gives your microphone back. Saved on your computer |
+| `mutate tsvoice on` | Turns TeamSpeak voice back on (it is on to begin with) |
 | `mutate tsvoice who` | Lists every player: plugin linked or not, and which TeamSpeak channel they sit in |
 | `mutate tsvoice help` | Lists the commands |
 
 ## 4. Server settings
 
-In `MutTSVoice_Server.ini` on the server, under `[MutTSVoice.MutTSVoice]`:
+In `ROMutTSVoice_Server.ini` on the server, under `[MutTSVoice.MutTSVoice]`:
 
 | Setting | What it does | Default |
 | :--- | :--- | :--- |
@@ -81,8 +83,9 @@ Add the mutator to the server's mutator list as `MutTSVoice.MutTSVoice`.
 
 | Where | Setting | What it does | Default |
 | :--- | :--- | :--- | :--- |
-| `MutTSVoice_Client.ini`, `[MutTSVoice.TSVInteraction]` | `bDisableTalkerList` | Hides the list of who is talking | Off |
-| `MutTSVoice_Client.ini`, `[MutTSVoice.TSVInteraction]` | `PluginPort` | The plugin's port. Only change it together with the plugin's | 25700 |
+| `ROMutTSVoice_Client.ini`, `[MutTSVoice.TSVInteraction]` | `bDisableTeamSpeak` | TeamSpeak voice off (set by `mutate tsvoice off` / `on`) | Off |
+| `ROMutTSVoice_Client.ini`, `[MutTSVoice.TSVInteraction]` | `bDisableTalkerList` | Hides the list of who is talking | Off |
+| `ROMutTSVoice_Client.ini`, `[MutTSVoice.TSVInteraction]` | `PluginPort` | The plugin's port. Only change it together with the plugin's | 25700 |
 | `rs2voice.ini` in TeamSpeak's settings folder (`%APPDATA%\TS3Client`), `[RS2Voice]` | `Port` | The port the plugin listens on, on your own computer only | 25700 |
 
 ## 6. Building the plugin
@@ -109,12 +112,23 @@ The TeamSpeak headers belong to TeamSpeak, so they are not kept in git.
 ## 8. What has been checked
 
 - **Builds:** the mutator compiles with no errors or warnings. The plugin builds and has every function TeamSpeak looks for.
-- **Test harness** (`THSuiteTSVoice`, *compiled, not yet run*): who hears whom on every channel, including the dead, spectators, enemies and the settings; Squad following the TeamSpeak channel; which game key talks on which channel; every player getting their info; `mutate tsvoice` and `who`; the voice tool being put in front of the game's input; keys being left to the game when no plugin is linked; and the plugin's messages.
-- **Not checked yet (needs TeamSpeak and a real game):**
-  - the plugin loading in TeamSpeak;
-  - the game linking to it;
+- **The plugin in TeamSpeak 3.6.2:** it loads and listens for the game.
+- **The game and the plugin** (in a real game, 2026-11-14):
+  - the game links to the plugin and sends its Steam ID, settings and camera position ten times a second;
+  - it reads the plugin's answers (TeamSpeak connected or not, and the channel);
+  - with TeamSpeak not connected to a server, the plugin correctly answers "not connected" and the voice keys stay with the game.
+- **Test harness** (`THSuiteTSVoice`, run 2026-11-14: 56 passed, 0 failed):
+  - who hears whom on every channel, including the dead, spectators, enemies and the settings;
+  - Squad following the TeamSpeak channel, and the main voice key always talking in it;
+  - which game key talks on which channel;
+  - every player getting their info;
+  - `mutate tsvoice`, `on`, `off` and `who`;
+  - the voice tool sitting in front of the game's input;
+  - keys being left to the game when no plugin is linked or TeamSpeak voice is off;
+  - the plugin's messages.
+- **Not checked yet (needs TeamSpeak connected to a server, and a second player with the plugin):**
+  - the microphone being taken over and given back;
   - whispering reaching the right people;
   - Squad channel talk;
-  - the microphone being taken over and given back;
   - proximity voice direction (left and right could come out swapped) and fading;
   - the talker list on screen. The harness can't check on-screen drawing or sound.

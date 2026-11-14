@@ -14,6 +14,8 @@ class TSVInteraction extends Interaction
 
 var config int      PluginPort;         // The plugin's local port (0: 25700)
 var config bool     bDisableTalkerList; // Don't draw who is talking
+var config bool     bDisableTeamSpeak;  // The player turned TeamSpeak voice off (mutate tsvoice off): every voice key uses
+                                        // the game's voice chat and the plugin isn't linked. Stored as the negative: on by default
 
 var TSVPlayerInfo   Info;
 var TSVLink         Link;
@@ -48,24 +50,55 @@ function Start()
         PluginPort = 25700;
     HeldKey = 'None';
     BuildKeyMap();
-    if (Info != None && Info.ToolOwner != None)
-    {
-        Link = Info.ToolOwner.Spawn(class'TSVLink');
-        if (Link != None)
-        {
-            Link.Tool = self;
-            Link.Connect(PluginPort);
-        }
-    }
+    if (!bDisableTeamSpeak)
+        OpenLink();
 }
 
 function Stop()
 {
+    CloseLink();
+}
+
+function OpenLink()
+{
+    if (Link != None || Info == None || Info.ToolOwner == None)
+        return;
+    Link = Info.ToolOwner.Spawn(class'TSVLink');
+    if (Link != None)
+    {
+        Link.Tool = self;
+        Link.Connect(PluginPort);
+    }
+}
+
+// Closing the link makes the plugin give the microphone back
+function CloseLink()
+{
     StopTalk();
+    if (bTSConnected && Info != None)
+        Info.ServerSetPluginLinked(false);
+    bTSConnected = false;
     if (Link != None)
         Link.CloseLink();
     Link = None;
-    bTSConnected = false;
+}
+
+// mutate tsvoice on / off, saved on this computer
+function SetEnabled(bool bOn)
+{
+    bDisableTeamSpeak = !bOn;
+    SaveConfig();
+    if (bOn)
+    {
+        bAnnouncedLink = false;
+        OpenLink();
+        Message("TeamSpeak voice on. Your voice keys will talk on TeamSpeak once the plugin is linked.");
+    }
+    else
+    {
+        CloseLink();
+        Message("TeamSpeak voice off. Your voice keys use the game's voice chat. Turn it back on with: mutate tsvoice on");
+    }
 }
 
 // ====================================================
@@ -94,6 +127,8 @@ function HandleLine(string Line)
     A = SplitString(Line, " ", true);
     if (A.Length == 0)
         return;
+    if (Caps(A[0]) == "TS" || Caps(A[0]) == "CHAN")
+        `log("[MutTSVoice] Plugin: "$Line);
     switch (Caps(A[0]))
     {
         // TS <1|0>: TeamSpeak connected to a server or not
@@ -140,7 +175,7 @@ function Send(string Line)
 
 function bool IsActive()
 {
-    return Link != None && Link.IsConnected() && bTSConnected;
+    return !bDisableTeamSpeak && Link != None && Link.IsConnected() && bTSConnected;
 }
 
 function Message(string Msg)
@@ -275,14 +310,14 @@ function StopTalk()
     TalkChannel = class'TSVRules'.const.CH_NONE;
 }
 
-// The game's channel setting for its own voice key, and the same fall-backs the game uses for a channel this player
-// can't talk on right now (no vehicle, not a leader: team). Squad always works: it is the player's TeamSpeak channel.
+// The game's main voice key is TeamSpeak's own push-to-talk (the player's channel), whatever the game's channel setting.
+// The other keys fall back as the game does for a channel this player can't talk on now (no vehicle, not a leader: team).
 function byte ResolveChannel(byte Ch)
 {
     local TSVRules.TSVPlayerState Me;
 
     if (Ch == class'TSVRules'.const.CH_CURRENT)
-        Ch = class'TSVRules'.static.FromGameChannel(ROPlayerController(Info.ToolOwner) != None ? ROPlayerController(Info.ToolOwner).CurrentVOIPChannel : 1);
+        Ch = class'TSVRules'.const.CH_SQUAD; // the main voice key is always TeamSpeak's own: talk in your channel
     if (MyIndex == INDEX_NONE)
         return Ch;
     Me = Seen[MyIndex].State;

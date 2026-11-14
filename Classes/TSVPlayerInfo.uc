@@ -86,6 +86,13 @@ reliable server function ServerSetPluginLinked(bool bLinked)
     }
 }
 
+// mutate tsvoice on / off: the setting lives on the player's own computer
+reliable client function ClientSetEnabled(bool bOn)
+{
+    if (Tool != None)
+        Tool.SetEnabled(bOn);
+}
+
 function string PlayerNameOf()
 {
     return (PRI != None) ? PRI.PlayerName : "?";

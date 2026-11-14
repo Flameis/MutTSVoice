@@ -139,9 +139,16 @@ function TSVoiceCommand(array<string> Args, PlayerController PC)
             ShowWho(PC);
             return;
 
+        case "on":
+        case "off":
+            if (InfoFor(PC) != None)
+                InfoFor(PC).ClientSetEnabled(Sub == "on");
+            return;
+
         case "help":
         default:
-            Say(PC, "mutate tsvoice: your TeamSpeak voice status | mutate tsvoice who: who has the plugin and which TeamSpeak channel they are in");
+            Say(PC, "mutate tsvoice: your TeamSpeak voice status | mutate tsvoice on / off: use TeamSpeak for your voice keys or not"
+                $" | mutate tsvoice who: who has the plugin and which TeamSpeak channel they are in");
             return;
     }
 }
@@ -153,7 +160,7 @@ function ShowStatus(PlayerController PC, TSVPlayerInfo I)
     if (I == None)
         return;
     if (!I.bPluginLinked)
-        Say(PC, "Your plugin: not linked, your voice keys use the game's voice chat");
+        Say(PC, "Your plugin: not linked, your voice keys use the game's voice chat (mutate tsvoice on / off switches TeamSpeak voice)");
     else
         Say(PC, "Your plugin: linked, your voice keys talk on TeamSpeak. Squad voice goes to your TeamSpeak channel"
             $(I.TSChannelName != "" ? " ("$I.TSChannelName$")" : ""));
