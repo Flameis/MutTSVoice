@@ -1,7 +1,7 @@
 "workshopitem"
 {
 	"appid"			"418460"
-	"publishedfileid"	"0"
+	"publishedfileid"	"3839741457"
 	"visibility"		"3"
 	"contentfolder"		""
 	"title"			"29th TeamSpeak Voice"
