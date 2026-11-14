@@ -2,6 +2,7 @@
 {
 	"appid"			"418460"
 	"publishedfileid"	"0"
+	"visibility"		"3"
 	"contentfolder"		""
 	"title"			"29th TeamSpeak Voice"
 	"description"		"[h1]29th TeamSpeak Voice[/h1]The game's voice keys talk through TeamSpeak 3 instead of the game's own voice chat. Players need the RS2 Voice TeamSpeak plugin: [url=https://github.com/Flameis/MutTSVoice/releases]download it here[/url].
