@@ -19,6 +19,8 @@
  *   TS <1|0>                              TeamSpeak is connected to a server or not
  *   CHAN <channel id> <channel name>      the TeamSpeak channel the player sits in (sent when it changes)
  *   MSG <text>                            a message to show the player
+ *   TALK <steamid|-> <1|0> <whisper 1|0>  someone this player hears started or stopped talking
+ *   STATE ...                             the answer to STATE (the plugin's own view, for checking)
  *
  * How the voice gets to the right people:
  *  - Every plugin puts "rs2v=<steamid64>" in its TeamSpeak client's metadata, so each plugin can find the TeamSpeak
@@ -748,6 +750,25 @@ EXPORT void ts3plugin_onClientMoveEvent(uint64 sch, anyID clientID, uint64 oldCh
     (void)clientID; (void)oldChannelID; (void)newChannelID; (void)visibility; (void)moveMessage;
     if (sch == g_sch)
         g_mapDirty = 1;
+}
+
+/* Someone we hear started or stopped talking: tell the game who (by Steam ID, "-" for someone not in the game) and
+   whether it was a whisper to us (team, all, vehicle, command, proximity) or plain channel talk (squad) */
+EXPORT void ts3plugin_onTalkStatusChangeEvent(uint64 sch, int status, int isReceivedWhisper, anyID clientID)
+{
+    ClientMap* c;
+    anyID me = 0;
+
+    if (sch != g_sch || status == STATUS_TALKING_WHILE_DISABLED)
+        return;
+    EnterCriticalSection(&g_lock);
+    if (g_savedInput >= 0 && ts3.getClientID(sch, &me) == ERROR_ok && clientID != me)
+    {
+        ensureMap();
+        c = findClientById(clientID);
+        sendGame("TALK %s %d %d", c ? c->steam : "-", status == STATUS_TALKING ? 1 : 0, isReceivedWhisper ? 1 : 0);
+    }
+    LeaveCriticalSection(&g_lock);
 }
 
 /* Proximity talkers fade from full volume at 10% of the range to silence at the range */
