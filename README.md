@@ -75,7 +75,7 @@ On the WebAdmin **Mutators** page, **MutTSVoice Settings** (two tabs: **Voice** 
 | `TeamSpeakAddress` | The TeamSpeak server players should join. Shown by `mutate tsvoice` | Empty |
 | `TeamSpeakChannel` | Where players should sit while playing. Shown by `mutate tsvoice` | Empty |
 
-Add the mutator to the server's mutator list as `MutTSVoice.MutTSVoice`.
+The mutator is workshop item **3839741457** (unlisted). A server downloads it when `ServerSubscribedWorkshopItems=3839741457` is in its `ROEngine.ini` (added to the 29th's Company, Platoon, Euro and Bat servers on 2026-11-14), and runs it when `MutTSVoice.MutTSVoice` is added to its mutator list (the start-up command line in the hosting control panel).
 
 **The TeamSpeak server** must let players whisper (the default server groups do). If whispering is blocked, every channel except Squad stays silent.
 
