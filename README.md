@@ -134,6 +134,7 @@ The TeamSpeak headers belong to TeamSpeak, so they are not kept in git.
   - the voice tool sitting in front of the game's input;
   - keys being left to the game when no plugin is linked or TeamSpeak voice is off;
   - the plugin's messages.
+- **On a server:** linking failed on a dedicated server until 2026-11-14 (the game never started its voice tool, so it never connected to the plugin). Fixed; not yet tried on a server again.
 - **Not checked yet (needs a second player with the plugin):**
   - whispering reaching the right people;
   - other players hearing Squad channel talk (the microphone does turn on);

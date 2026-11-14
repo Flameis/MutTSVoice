@@ -102,6 +102,23 @@ function string PlayerNameOf()
 // Owner's computer
 // ====================================================
 
+// The local player this info belongs to, or None when it is someone else's (or their player hasn't arrived yet). The
+// owner isn't sent to players' games (only to a game that is also the server), so the local player is found by their
+// player info: every player's game gets every player's info, and only the matching one puts in the tool.
+simulated function PlayerController LocalOwner()
+{
+    local PlayerController PC;
+
+    PC = PlayerController(Owner);
+    if (PC == None || LocalPlayer(PC.Player) == None)
+        PC = GetALocalPlayerController();
+    if (PC == None || LocalPlayer(PC.Player) == None || PC.PlayerInput == None)
+        return None;
+    if (PRI == None || PC.PlayerReplicationInfo != PRI)
+        return None;
+    return PC;
+}
+
 simulated function InstallTool()
 {
     local PlayerController PC;
@@ -111,9 +128,13 @@ simulated function InstallTool()
         ClearTimer('InstallTool');
         return;
     }
-    PC = PlayerController(Owner);
-    if (PC == None || LocalPlayer(PC.Player) == None || PC.PlayerInput == None)
+    PC = LocalOwner();
+    if (PC == None)
         return;
+    // Owned here too, so this game sends the server calls below (linked, voice channel, TeamSpeak channel): without an
+    // owner on this side the game drops them
+    if (Owner != PC)
+        SetOwner(PC);
     // Wait for the player's Steam ID to arrive
     if (SteamId == "")
         return;
