@@ -33,7 +33,7 @@ While the game is linked, the plugin keeps your microphone off until you hold a 
 
 ## 2. The voice channels
 
-These are the game's normal voice keys. Nothing new to learn.
+These are the game's normal voice keys. Nothing new to learn. A key you bind or change during play (in the options or with `setbind`) works within a couple of seconds.
 
 | Game voice key | On TeamSpeak, who hears you |
 | :--- | :--- |
