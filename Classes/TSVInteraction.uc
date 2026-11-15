@@ -23,6 +23,9 @@ var TSVLink         Link;
 
 var array<name>     KeyNames;           // keys bound to the game's voice commands...
 var array<byte>     KeyChannels;        // ...and the channel each talks on (CH_CURRENT: the game's channel setting)
+var float           KeysBuiltAt;        // when the key list was last read (bindings can change during play)
+
+const KEYS_CHECK_TIME = 2.0;            // seconds between reads of the player's key bindings
 
 var bool            bTSConnected;       // the plugin says TeamSpeak is connected to a server
 var bool            bAnnouncedLink;
@@ -205,6 +208,7 @@ function BuildKeyMap()
     KeyChannels.Length = 0;
     if (Info == None || Info.ToolOwner == None || Info.ToolOwner.PlayerInput == None)
         return;
+    KeysBuiltAt = Info.ToolOwner.WorldInfo.RealTimeSeconds;
     Inp = Info.ToolOwner.PlayerInput;
 
     for (i = 0; i < Inp.Bindings.Length; i++)
@@ -262,6 +266,9 @@ function bool InputKey(int ControllerId, name Key, EInputEvent EventType, option
     if (EventType != IE_Pressed || !IsActive() || IsTyping())
         return false;
 
+    // Bindings changed in the options or with setbind during play are picked up within a couple of seconds
+    if (Info != None && Info.ToolOwner != None && Info.ToolOwner.WorldInfo.RealTimeSeconds - KeysBuiltAt > KEYS_CHECK_TIME)
+        BuildKeyMap();
     Ch = ChannelForKey(Key);
     if (Ch == class'TSVRules'.const.CH_NONE)
         return false;
