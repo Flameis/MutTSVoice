@@ -295,6 +295,11 @@ function byte GameChannelSetting()
     return ChannelForGameSetting(ROPC.CurrentVOIPChannel);
 }
 
+function int GameSettingIndex()
+{
+    return (Info != None && ROPlayerController(Info.ToolOwner) != None) ? int(ROPlayerController(Info.ToolOwner).CurrentVOIPChannel) : -1;
+}
+
 static function byte ChannelForGameSetting(byte GameChannel)
 {
     switch (GameChannel)
@@ -331,6 +336,9 @@ function StartTalk(byte Ch, name Key)
     HeldKeyChannel = Ch;
     Gather();
     Ch = ResolveChannel(Ch);
+    // For fault finding: which key, the channel it asks for, the game's Change Voice Channel setting, and what is used
+    `log("[MutTSVoice] Talk: key "$Key$" asks "$HeldKeyChannel$", game channel setting "$GameSettingIndex()$", talking on "
+        $class'TSVRules'.static.ChannelName(Ch)$(MyIndex == INDEX_NONE ? " (this player not found yet)" : ""));
     if (Ch == class'TSVRules'.const.CH_NONE)
         return; // the key is still held (and its release is ours), but nothing is said
     TalkChannel = Ch;
