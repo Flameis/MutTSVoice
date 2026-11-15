@@ -1,6 +1,4 @@
-# MutTSVoice - TeamSpeak voice for Rising Storm 2
-
-*In development: the game and the plugin link and talk to each other, but voice has not yet been tried between players on a TeamSpeak server. See section 8.*
+# MutTSVoice: TeamSpeak voice for Rising Storm 2
 
 MutTSVoice moves the game's voice chat onto **TeamSpeak 3**. Players keep their normal voice keys. While their TeamSpeak plugin is running (and they haven't turned it off with `mutate tsvoice off`), those keys talk through TeamSpeak instead of the game's own voice chat:
 
@@ -23,11 +21,10 @@ There are two parts:
 5. Player settings
 6. Building the plugin
 7. How it works
-8. What has been checked
 
 ## 1. For players: setting up
 
-1. **Install the plugin:** quit TeamSpeak completely (also from the system tray), then double-click `RS2Voice.ts3_plugin` and TeamSpeak installs it. The plugin first put on the v1.0.0-beta release (replaced on 2026-11-14) left an empty plugin file when it was installed over an earlier copy; TeamSpeak then said the plugin was a "Bad Image" or failed to load it (LoadLibrary error 193). If that happened, install the current download again. Then check it is ticked under TeamSpeak's *Tools > Options > Addons*.
+1. **Install the plugin:** quit TeamSpeak completely (also from the system tray), then double-click `RS2Voice.ts3_plugin` and TeamSpeak installs it. If TeamSpeak says the plugin is a "Bad Image" or fails to load it (LoadLibrary error 193), the plugin file is empty: quit TeamSpeak and install it again. Then check it is ticked under TeamSpeak's *Tools > Options > Addons*.
 2. **TeamSpeak's microphone setting:** while the game is running, the plugin keeps your microphone off and only turns it on while you hold a voice key in the game. Voice Activation or Continuous Transmission work best. Push-to-Talk works too, but then your TeamSpeak key still talks into your channel as well.
 3. **Join the TeamSpeak server** the game server names (type `mutate tsvoice` in the game to see it). Sit in your squad's channel: that channel is your Squad voice.
 4. **Play.** When the game finds the plugin you see *"[TS Voice] Linked to TeamSpeak"*. From then on your voice keys talk on TeamSpeak.
@@ -110,35 +107,3 @@ The TeamSpeak headers belong to TeamSpeak, so they are not kept in git.
 - **Squad voice** is different: the plugin simply talks into your own TeamSpeak channel. The plugin also tells the game which channel you are in, so everyone's talker list and `mutate tsvoice who` show it.
 - **Proximity voice:** ten times a second, your game tells the plugin where your camera is and where each proximity talker you can hear is standing. TeamSpeak then plays their voice from that direction, at full volume up to 7.5 meters, fading to silence at 75 meters.
 - **The server** only keeps, for every player, their Steam ID, their TeamSpeak channel, which voice channel they are talking on, and whether their plugin is linked. It sends these to everyone so the talker lists match.
-
-## 8. What has been checked
-
-- **Builds:** the mutator compiles with no errors or warnings. The plugin builds and has every function TeamSpeak looks for.
-- **The plugin in TeamSpeak 3.6.2:** it loads and listens for the game.
-- **The game and the plugin** (in a real game, 2026-11-14):
-  - the game links to the plugin and sends its Steam ID, settings and camera position ten times a second;
-  - it reads the plugin's answers (TeamSpeak connected or not, and the channel);
-  - with TeamSpeak not connected to a server, the plugin correctly answers "not connected" and the voice keys stay with the game;
-  - with TeamSpeak connected, the game gets "connected" and the player's real channel and its name.
-- **The plugin on a real TeamSpeak server** (one player, 2026-11-14):
-  - it puts the player's Steam ID in their TeamSpeak details, and takes it away when the game leaves;
-  - it reports the player's channel;
-  - it turns the microphone off while the game is linked, on while Squad is held, and off again when the key is let go;
-  - holding another key with nobody to hear (or nobody on TeamSpeak) keeps the microphone off, so nothing goes to the whole channel by mistake;
-  - when the game leaves, the microphone goes back to exactly how it was.
-- **Test harness** (`THSuiteTSVoice`, 2026-11-14: 69 passed, 0 failed; the "no plugin" check skips while a TeamSpeak plugin runs on the test PC, as it should):
-  - the WebAdmin settings page: its tabs and labels, showing the running values, saving them (to every player straight away) and putting them back;
-  - who hears whom on every channel, including the dead, spectators, enemies and the settings;
-  - Squad following the TeamSpeak channel, and the main voice key following the game's Change Voice Channel setting;
-  - which game key talks on which channel;
-  - every player getting their info;
-  - `mutate tsvoice`, `on`, `off` and `who`;
-  - the voice tool sitting in front of the game's input;
-  - keys being left to the game when no plugin is linked or TeamSpeak voice is off;
-  - the plugin's messages.
-- **On a server:** linking failed on a dedicated server until 2026-11-14 (the game never started its voice tool, so it never connected to the plugin). Fixed; not yet tried on a server again.
-- **Not checked yet (needs a second player with the plugin):**
-  - whispering reaching the right people;
-  - other players hearing Squad channel talk (the microphone does turn on);
-  - proximity voice direction (left and right could come out swapped) and fading;
-  - the talker list on screen. The harness can't check on-screen drawing or sound.
